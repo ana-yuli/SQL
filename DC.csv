@@ -1,0 +1,56 @@
+--dc 
+select 
+    date_trunc('month',o.creation_date)::date as mes,
+	count(distinct o.userid) as users,
+	count(distinct o.orderid) as orders,
+    round(Sum (o.gtv/o.currency_rate),2)as BRL_TPV,
+    round(sum(case when o.main_card_type in(7) then (o.creditcard_amount/o.currency_rate)
+    else((o.extra_charge_summa/o.currency_rate)+(o.financing_summa/o.currency_rate)+(o.profit_margin/o.currency_rate)) end),2) as BRLrevenue,
+    --- valores de revenue
+	/*round(Sum(o.profit_margin/o.currency_rate),2) as Commissions,
+      round(sum(o.extra_charge_summa/o.currency_rate),2) fees,
+      round(Sum (o.financing_summa/o.currency_rate),2) as Financing,
+      round(sum(case when o.main_card_type in(7)then (o.creditcard_amount/o.currency_rate) else 0 end ),2)as Prime,
+    */
+	
+	----valores taxas
+	round(sum(tb1.value),2) as cashback,	  
+   
+   --- soma custos sem cashback
+    
+	round(  
+	(sum(case when o.creditcard_amount>0 and o.installments_count>1 then (o.pin_cost/o.currency_rate)*0.0025 else 0 end ))+ --as CCB_Estimated,
+	(sum(case when o.chargeback_status=101 then (o.creditcard_amount/o.currency_rate)else 0 end))+ --as chargeback,	
+    (sum(o.discount_amount/o.currency_rate))+---as discount_amount,
+	(sum((o.creditcard_amount/o.currency_rate)*0.0006))+ --as Fraud_Estimated,
+	(sum(o.iof/o.currency_rate))+ --as iof,
+	(sum(case when o.main_card_type in (44) and o.creditcard_amount>0 or o.wallet_amount>0 then 1 else 0 end)*0.07) + --as pix,
+	(sum(o.processing_summa/o.currency_rate))+ --as Processing,
+	((sum(case when o.main_card_type in (7)then (o.pin_cost/o.currency_rate)*0.1165 else 0 end ))+
+	(sum((o.profit_margin/o.currency_rate)*0.1165))+
+	(sum((o.financing_summa/o.currency_rate)*0.465)))  ---as Sales_Taxes_Estimated
+	   ,2) as Cost
+	 
+   
+from orders o
+left join users u on o.userid=u.userid
+left join (
+    select oal.orderid, sum(oal.value)as value
+    from order_action_logs oal
+    where oal.creation_date between '2022-04-15' and '2022-05-15'
+        and oal.result='true'
+        and (oal.action='assign repeat cashback' 
+			 or oal.action='assign first order cashback' 
+			 or oal.action='assign promocode cashback'
+			 or oal.action='assign repeat pre-prime cashback'
+			)
+group by 1
+) tb1 on o.orderid=tb1.orderid
+where o.status=101
+    --and o.main_card_type in (4,10)--,13,19,37,39,41,44)
+    and o.creditcard_amount>0
+    and o.creation_date between '2022-04-15' and '2022-05-15'
+    and o.billing not like '%pagarme%'
+    and (u.category is null OR u.category not like '%qa%')
+    and o.userid
+group by 1--,2--,3--,4

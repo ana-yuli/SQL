@@ -1,0 +1,25 @@
+---Churn 
+select
+--(date_trunc('month', o.creation_date::date),
+COUNT(DISTINCT o.userid) 
+
+from 
+orders o
+WHERE NOT EXISTS 
+   (
+	--não realizaram commpra no mes anterior
+
+	   select 1 
+	from 
+	orders p
+	where status = 101
+	and creation_date  >= '2021-01-01' --três meses antes
+	and creation_date  < '2021-04-01'--::date + interval'90 days' --mês atual
+	  and  o.main_card_type = 4
+	   and o.userid = p.userid
+		   
+   )
+and cast (creation_date as date) between '2021-04-01' and '2021-05-01'--mês passado and mês atual
+and status = 101
+and o.main_card_type = 4
+ --group by 1

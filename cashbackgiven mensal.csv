@@ -1,0 +1,25 @@
+select
+extract('month' from creation_date) AS month,
+ --  extract('year' from creation_date)   AS year,
+ --cast (creation_date as date) ,
+  
+ sum( case  when action = 'assign first order cashback' then  Round(value,2) else 0 end) as R$5, 
+ sum(CASE when action = 'assign repeat cashback' and result = true  then Round(value,2) else 0 end) as Porc5,
+ Count(distinct orderid)as qtd_ordens,
+ count(distinct userid ) as qtd_users
+  
+  
+ /* case  when action = 'assign first order cashback' then  'R$5' end as Cinco,
+      CASE when action = 'assign repeat cashback' then '5%' end as Porc, */
+
+ -- Round( SUM(value) ,2)                         AS brl_given
+from order_action_logs
+where (action = 'assign first order cashback' 
+or  action = 'assign repeat cashback'  )
+and result = true
+and creation_date > '2022-02-01'
+and creation_date < '2022-02-01'::date + interval'1 days'
+--and creation_date < current_date
+group by 1
+order by 1
+;

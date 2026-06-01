@@ -1,0 +1,99 @@
+----Installs campanha 01/12/2021
+
+ 
+SELECT distinct
+  cast (u.reg_date as date),
+  u.userid,
+  u.kid as kid,
+  case when split_part(u.kid,'_',1)='Facebook'then split_part(u.kid,'_',1)  
+       when split_part(u.kid,'|',1)='Facebook'then split_part(u.kid,'|',1) 
+	   when replace(split_part(u.kid,'|',1),'src:','') ='Facebook'then replace(split_part(u.kid,'|',1),'src:','')
+	  
+	   else  replace((split_part(u.kid,'_',1)),'/','') 
+	   
+  end  as canal,
+  case when split_part(u.kid,'_',1)='Facebook' then split_part(split_part(u.kid,'_',2),'_',1)
+       when replace((split_part(u.kid,'+',1)),'Adsx','') ='Facebook' then split_part(split_part(u.kid,'x',2),'x',1)
+	   when split_part(u.kid,'|',1)='Facebook'then  replace((split_part(u.kid,'|',2)),'cam:','')
+       when replace(split_part(u.kid,'|',1),'src:','') ='Facebook'  then  replace((split_part(u.kid,'|',2)),'cam:','')
+  else replace((split_part(u.kid,':',2)),'|af_status','') end as IDcampanha,
+  
+  case when split_part(u.kid,'_',1)='Facebook' then split_part(split_part(u.kid,'_',3),'_',1)
+       when replace((split_part(u.kid,'+',1)),'Adsx','') ='Facebook' then split_part(split_part(u.kid,'x',3),'x',1)
+	    when split_part(u.kid,'|',1)='Facebook'then  replace((split_part(u.kid,'|',3)),'adg:','')
+          when replace(split_part(u.kid,'|',1),'src:','') ='Facebook'then  replace((split_part(u.kid,'|',3)),'adg:','')
+ end as Tipo,
+  case when split_part(u.kid,'_',1)='Facebook' then split_part(split_part(u.kid,'_',4),'_',1)
+       when replace((split_part(u.kid,'+',1)),'Adsx','') ='Facebook' then split_part(split_part(u.kid,'x',4),'x',1) 
+        when split_part(u.kid,'|',1)='Facebook'then  replace((split_part(u.kid,'|',4)),'ad:','')
+          when replace(split_part(u.kid,'|',1),'src:','') ='Facebook'then  replace((split_part(u.kid,'|',4)),'ad:','')
+ end as Objetivo,
+   
+  
+  --split_part(split_part(u.kid,'_',4),'_',1)   as Objetivo,
+  
+   case when split_part(u.kid,'_',1)='Facebook' then split_part(u.kid,'_',6)
+       when replace((split_part(u.kid,'+',1)),'Adsx','') ='Facebook' then split_part(split_part(u.kid,'x',5),'x',1) 
+        when split_part(u.kid,'|',1)='Facebook'then  (split_part(u.kid,'|',5))
+         when replace(split_part(u.kid,'|',1),'src:','') ='Facebook' then  (split_part(u.kid,'|',5))
+ 
+ 
+ end as anuncio,
+   
+
+  CASE WHEN cc.creditcardid IS NULL THEN 1 ELSE 0 END AS without_cc,
+  case when  (u.user_agent)like ('%Android%') then split_part(split_part(u.user_agent,'U;',2),';',1) end as tipo,
+  count(distinct CASE WHEN u.status>=0 THEN u.userid END) AS Installs,
+  count(distinct CASE WHEN cast (u.reg_date as date)=cast (o.creation_date as date) and o.status=0 THEN o.userid END) AS order_select,
+  count(distinct CASE WHEN cast (u.reg_date as date)=cast (o.creation_date as date) and o.status in(1,5,102) THEN o.userid END) AS order_CCError_Blocked_Declined,
+   to_char(age(current_date , p.birthdate ),'YY') as idade,
+    case when upper (uad.state_code) like ('AC') then 'Acre'
+	      when upper (uad.state_code) like ('AL') then 'Alagoas'
+		  when upper (uad.state_code) like ('AP') then 'Amapa'
+		  when upper (uad.state_code) like ('AM') then 'Amazonas'
+		  when upper (uad.state_code) like ('BA') then 'Bahia'
+		  when upper (uad.state_code) like ('CE') then 'Ceara'
+		  when upper (uad.state_code) like ('DF') then 'Distrito Federal'
+		  when upper (uad.state_code) like ('ES') then 'Espirito santo'
+		  when upper (uad.state_code) like ('GO') then 'Goias'
+		  when upper (uad.state_code) like ('MA') then 'Maranhao'
+		  when upper (uad.state_code) like ('MT') then 'Mato Grosso'
+		  when upper (uad.state_code) like ('MS') then 'Mato Grosso do Sul'
+		  when upper (uad.state_code) like ('MG') then 'Minas Gerais'
+		  when upper (uad.state_code) like ('PA') then 'Para'
+		  when upper (uad.state_code) like ('PB') then 'Paraiba'
+		  when upper (uad.state_code) like ('PR') then 'Parana'
+		  when upper (uad.state_code) like ('PE') then 'Pernanbuco'
+		  when upper (uad.state_code) like ('PI') then 'Piaui'
+		  when upper (uad.state_code) like ('RJ') then 'Rio de Janeiro'
+		  when upper (uad.state_code) like ('RN') then 'Rio Grande do Norte'
+		  when upper (uad.state_code) like ('RS') then 'Rio Grande do Sul'
+		  when upper (uad.state_code) like ('RO') then 'Rondonia'
+		  when upper (uad.state_code) like ('RR') then 'Roraima'
+		  when upper (uad.state_code) like ('SC') then 'Santa Catarina'
+		  when upper (uad.state_code) like ('SP') then 'Sao Paulo'
+		  when upper (uad.state_code) like ('SE') then 'Sergipe'
+		  when upper (uad.state_code) like ('TO') then 'Tocantins'
+		  
+    ELSE 'Outros' end  as Estados
+
+FROM users u
+left join orders  o     on (u.userid=o.userid)
+left join user_documents   ud_doc on ud_doc.userid = u.userid and ud_doc.source = 0 and ud_doc.validation_status=1
+left join user_creditcards cc on cc.userid = u.userid
+left join user_profiles p on (u.userid = p.userid)
+left join user_addresses uad on (p.user_addressid = uad.user_addressid)	
+WHERE reg_date >= '2022-01-03'::date 
+--and reg_date < current_date
+and( (u.kid) like any (array[
+'%6263075968124%',
+'%14307777099%','%UAC_Install_Elo10%', '%6275833036124%'	
+])
+	)
+
+--and u.userid in (31461689,31461983,31462075,31462274)
+--and o.userid in (31089490)
+ -- facebook
+	
+	 group by 1,2,3,4,5,6,7,8,9,10,14,15
+	  

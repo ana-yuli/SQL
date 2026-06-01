@@ -1,0 +1,224 @@
+--NEW GOOGLE
+
+SELECT distinct
+   date_trunc('month',su.first_order_date)::date as Month_first_order,
+   cast (o.creation_date as date),
+   cast (u.reg_date as date),
+   (cast(su.first_order_date as date) - cast(u.reg_date as date )) as dias_firstorder,
+   o.userid, 
+   to_char(age(current_date , up.birthdate ),'YY') as idade,
+   case when upper (uad.state_code) like ('AC') then 'Acre'
+              when upper (uad.state_code) like ('AL') then 'Alagoas'
+                  when upper (uad.state_code) like ('AP') then 'Amapa'
+                  when upper (uad.state_code) like ('AM') then 'Amazonas'
+                  when upper (uad.state_code) like ('BA') then 'Bahia'
+                  when upper (uad.state_code) like ('CE') then 'Ceara'
+                  when upper (uad.state_code) like ('DF') then 'Distrito Federal'
+                  when upper (uad.state_code) like ('ES') then 'Espirito santo'
+                  when upper (uad.state_code) like ('GO') then 'Goias'
+                  when upper (uad.state_code) like ('MA') then 'Maranhao'
+                  when upper (uad.state_code) like ('MT') then 'Mato Grosso'
+                  when upper (uad.state_code) like ('MS') then 'Mato Grosso do Sul'
+                  when upper (uad.state_code) like ('MG') then 'Minas Gerais'
+                  when upper (uad.state_code) like ('PA') then 'Para'
+                  when upper (uad.state_code) like ('PB') then 'Paraiba'
+                  when upper (uad.state_code) like ('PR') then 'Parana'
+                  when upper (uad.state_code) like ('PE') then 'Pernanbuco'
+                  when upper (uad.state_code) like ('PI') then 'Piaui'
+                  when upper (uad.state_code) like ('RJ') then 'Rio de Janeiro'
+                  when upper (uad.state_code) like ('RN') then 'Rio Grande do Norte'
+                  when upper (uad.state_code) like ('RS') then 'Rio Grande do Sul'
+                  when upper (uad.state_code) like ('RO') then 'Rondonia'
+                  when upper (uad.state_code) like ('RR') then 'Roraima'
+                  when upper (uad.state_code) like ('SC') then 'Santa Catarina'
+                  when upper (uad.state_code) like ('SP') then 'Sao Paulo'
+                  when upper (uad.state_code) like ('SE') then 'Sergipe'
+                  when upper (uad.state_code) like ('TO') then 'Tocantins'
+                  
+    ELSE 'Outros' end  as Estados,
+   case 
+          when(cast(su.first_order_date as date) - cast(u.reg_date as date))<=31  then  (split_part(split_part(u.kid,'x',1),'|',1))
+          when(cast(su.first_order_date as date) - cast(u.reg_date as date))>31   then  (split_part(split_part(o.kid,'x',1),'|',1))          
+          when(cast(su.first_order_date as date) - cast(u.reg_date as date))<=31  then split_part(u.kid,'_',1)
+          when(cast(su.first_order_date as date) - cast(u.reg_date as date))>31   then split_part(o.kid,'_',1)     
+  end as Kid_ajust,        
+   case 
+      when(cast(su.first_order_date as date) - cast(u.reg_date as date))<=31  then  replace(replace( (split_part(u.kid,'|',2)), 'campaign:',''), 'cam:', '')--(split_part(u.kid,'|',2))
+      when(cast(su.first_order_date as date) - cast(u.reg_date as date))>31   then  replace(replace( (split_part(o.kid,'|',2)), 'campaign:',''), 'cam:', '')--(split_part(o.kid,'|',2))               
+  end as Kid_camp,
+  case  when(cast(su.first_order_date as date) - cast(u.reg_date as date))<=31 then  substring((split_part(u.kid,'|',3)),strpos(split_part(u.kid,'|',3),':')+1)
+        when(cast(su.first_order_date as date) - cast(u.reg_date as date))>31 then  substring((split_part(o.kid,'|',3)),strpos(split_part(o.kid,'|',3),':')+1)
+  end as Kid_Adg,        
+   o.main_card_type,
+case    
+        when o.main_card_type in(10) and sd.category='Bancos digitales'then 'Boletos'
+         when o.main_card_type in(10) and sd.category='Bancos tradicionales'then 'Boletos'
+         when o.main_card_type in(10) and ub.sellers_type='GENERIC_BILLPAYMENTS'and sd.category is null then 'Boletos'
+         when o.main_card_type in(10) and (sd.category)in('Prestamos','Retail') then 'Boletos'
+         when o.main_card_type in(10) and (sd.category)in('Cuentas')
+         and sd.subcategory in ('Energy', 'Government', 'Salud', 'Seguros', 'Telecom','Cuentas')then 'Contas'
+         when o.main_card_type in(10) and (sd.category)in('Cuentas')
+         and sd.subcategory not in ('Energy', 'Government', 'Salud', 'Seguros', 'Telecom','Cuentas')then 'Boletos'
+         when o.main_card_type in(10) and (sd.category)in('Educacion')
+         and sd.subcategory in ('Educacion') then 'Contas' 
+         when o.main_card_type in(10) and (sd.category)in('Educacion')
+         and sd.subcategory not in ('Educacion') then 'Boletos' 
+         when o.main_card_type in(10) and (sd.category)in('Condominio')
+         and sd.subcategory in ('Condominio') then 'Contas' 
+         when o.main_card_type in(10) and (sd.category)in('Condominio')
+         and sd.subcategory not in ('Condominio') then 'Boletos' 
+         when o.main_card_type in(10) and ub.sellers_type<>'GENERIC_BILLPAYMENTS'then 'Contas'
+         
+         when o.main_card_type in(4) then 'Topup'        
+         when o.main_card_type in(13) then 'Transport'
+         when o.main_card_type in(19) then 'ePay'
+         when o.main_card_type in(20,40) then 'Loans'
+         when o.main_card_type in(21,22,24,27,34) then 'Prepaind'
+         when o.main_card_type in(30,31,32,33) then 'MPOS'
+         when o.main_card_type in(35,36) then 'Chargeback'
+         when o.main_card_type in(37) then 'GLP (UltraGaz)'
+         when o.main_card_type in(39) then 'Telesena'
+         when o.main_card_type in(41) then 'TV Topup'
+         when o.main_card_type in(44) then 'PIX Payment'
+         when o.main_card_type in(45) then 'PIX Receive'
+         when o.main_card_type in(11,16,17,18) then 'Cash-In'
+         when o.main_card_type in(29) then 'Cashin_Gift'
+         when o.main_card_type in(28) then 'Cashin_Admin'
+         when o.main_card_type in(7) then 'Upsell'
+         when o.main_card_type in(7) and b.userid=o.userid then b.type
+         when o.main_card_type in(7) and b.userid is null then 'Upsell'
+         when o.main_card_type in(14) then 'P2P'         
+ else 'Other' end as type,
+case when (rc.code) is null and  UPPER (left(o.coupon,2)) not in ('WC','QC','XC')and (d.code)is null  then o.coupon
+     when (d.code)=(o.coupon) then 'Partnerships MKT' else '23x'
+end as coupon,
+
+   count(distinct case when o.orderid = su.first_orderid then o.userid end) as new,
+   round(Sum (o.pin_cost/o.currency_rate),2) as valor_pagoBRL_pin_cost,
+   count(distinct CASE WHEN o.installments_count>1 THEN o.userid END ) parc,
+   count(distinct case when o.creditcard_amount>0  then o.userid end )as Pgto_CC,
+   round(sum (o.gtv/o.currency_rate),2)as BRL_GTV,
+   round(sum(o.discount_amount/o.currency_rate),2) as Discount_BRL,
+   round(sum(case when o.main_card_type in(7) then (o.creditcard_amount/o.currency_rate)
+      else ((o.extra_charge_summa/o.currency_rate)+(o.financing_summa/o.currency_rate)+(o.profit_margin/o.currency_rate)) end),2) as BRL_revenue,
+	count(distinct case when lj.category_id in (2,3,4) then o.userid end) as B2B 
+    
+FROM orders  o
+   left join users u            on (u.userid=o.userid)
+   left join stat_users su      on (su.userid=o.userid)
+   left join user_profiles up   on (up.userid = u.userid)
+   left join user_bills ub      on (ub.orderid = o.orderid)
+   left join sellers_document_categories sd on (sd.sellers_document=ub.sellers_document and sd.enabled in('TRUE'))
+   left join user_addresses uad on (up.user_addressid = uad.user_addressid)
+   left join  kid_sources k     on (k.kid_sourceid = split_part(split_part(u.kid,'x',1),'|',1))
+   left outer join raf_coupons rc on (rc.code = o.coupon) 
+   left outer join discount_coupons d on (d.code=o.coupon)
+   left join order_charges_and_discounts ocad on ocad.orderid=o.orderid   
+   left join reseller_category lj on (lj.userid=o.userid )
+   left join(select * from
+(select distinct
+CAST(o.creation_date as date),
+     o.userid,
+     o.main_card_type,
+case when b.prim_order = su.first_orderid then 'New User' 
+     when b.prim_order > su.first_orderid and b.prim_order = su.first_transport_orderid then 'New Cross'
+     when b.prim_order > su.first_orderid and b.prim_order = su.first_utility_orderid then 'New Cross'
+     when b.prim_order > su.first_orderid and b.prim_order = su.first_manual_topup_orderid then 'New Cross' 
+     when b.prim_order > su.first_orderid and b.prim_order = su.first_gift_orderid then 'New Cross' 
+     when b.prim_order > su.first_orderid and b.prim_order = su.first_parking_credit_orderid then 'New Cross'
+     when b.prim_order > su.first_orderid and b.prim_order = su.first_capitalization_orderid then 'New Cross'
+     when b.prim_order > su.first_orderid and b.prim_order = su.first_glp_orderid then 'New Cross' 
+     when b.prim_order > su.first_orderid and b.prim_order = su.first_pix_in_orderid then 'New Cross'
+     when b.prim_order > su.first_orderid and b.prim_order = su.first_pix_out_orderid then 'New Cross'
+     when b.prim_order > su.first_orderid and b.prim_order = su.first_prepaid_tv_topup_orderid then 'New Cross'
+     when o.orderid > su.first_orderid and o.orderid = su.first_prepaid_card_topup_orderid then 'New Cross'
+else 'Repeat'end as type_group,
+case when o.main_card_type in(10) and sd.category='Bancos digitales'then 'Boletos'
+         when o.main_card_type in(10) and sd.category='Bancos tradicionales'then 'Boletos'
+         when o.main_card_type in(10) and ub.sellers_type='GENERIC_BILLPAYMENTS'and sd.category is null then 'Boletos'
+         when o.main_card_type in(10) and (sd.category)in('Prestamos','Retail') then 'Boletos'
+         when o.main_card_type in(10) and (sd.category)in('Cuentas')
+         and sd.subcategory in ('Energy', 'Government', 'Salud', 'Seguros', 'Telecom','Cuentas')then 'Contas'
+         when o.main_card_type in(10) and (sd.category)in('Cuentas')
+         and sd.subcategory not in ('Energy', 'Government', 'Salud', 'Seguros', 'Telecom','Cuentas')then 'Boletos'
+         when o.main_card_type in(10) and (sd.category)in('Educacion')
+         and sd.subcategory in ('Educacion') then 'Contas' 
+         when o.main_card_type in(10) and (sd.category)in('Educacion')
+         and sd.subcategory not in ('Educacion') then 'Boletos' 
+         when o.main_card_type in(10) and (sd.category)in('Condominio')
+         and sd.subcategory in ('Condominio') then 'Contas' 
+         when o.main_card_type in(10) and (sd.category)in('Condominio')
+         and sd.subcategory not in ('Condominio') then 'Boletos' 
+         when o.main_card_type in(10) and ub.sellers_type<>'GENERIC_BILLPAYMENTS'then 'Contas'      
+         when o.main_card_type in(4) then 'Topup'        
+         when o.main_card_type in(13) then 'Transport'
+         when o.main_card_type in(19) then 'ePay'
+         when o.main_card_type in(20,40) then 'Loans'
+         when o.main_card_type in(21,22,24,27,34) then 'Prepaind'
+         when o.main_card_type in(30,31,32,33) then 'MPOS'
+         when o.main_card_type in(35,36) then 'Chargeback'
+         when o.main_card_type in(37) then 'GLP (UltraGaz)'
+         when o.main_card_type in(39) then 'Telesena'
+         when o.main_card_type in(41) then 'TV Topup'
+         when o.main_card_type in(44) then 'PIX Payment'
+         when o.main_card_type in(45) then 'PIX Receive'
+         when o.main_card_type in(11,16,17,18) then 'Cash-In'
+         when o.main_card_type in(29) then 'Cashin_Gift'
+         when o.main_card_type in(28) then 'Cashin_Admin'
+         when o.main_card_type in(7) then 'Upsell'         
+         when o.main_card_type in(14) then 'P2P'         
+ else '' end as type
+from orders o
+inner join stat_users su on su.userid=o.userid
+left join user_bills     ub        on (ub.orderid = o.orderid)
+left join sellers_document_categories sd on (sd.sellers_document=ub.sellers_document  and sd.enabled in('TRUE'))
+left join 
+(select distinct 
+   o.userid,
+   min(o.orderid) as prim_order
+from orders o
+ inner join stat_users su on su.userid=o.userid
+where  o.status = 101
+ and o.userid = su.userid
+ and o.creation_date >='2022-07-01'::date 
+ and o.creation_date <  current_date --    '2022-07-01'::date 
+ and o.orderid>su.first_orderid        
+ and o.main_card_type not in(16,17,18,28,29,20)
+ and o.userid in (select distinct 
+  o.userid
+from orders o
+ inner join stat_users su on (su.userid=o.userid)
+ left join users u on (u.userid=o.userid)
+where o.status = 101
+  and o.orderid = su.first_orderid
+  and o.main_card_type in(7)
+  and o.creation_date >='2022-07-01'::date 
+  and o.creation_date < current_date--'2022-01-01'::date   --current_date                                 
+group by 1)
+group by 1) as b on b.prim_order=o.orderid
+ where o.status = 101
+and o.creation_date >='2022-07-01'::date
+and o.creation_date  <current_date --< '2022-03-01'::date -- current_date
+)as a
+where a.type_group='New Cross'
+)as b on b.userid=o.userid
+WHERE o.creation_date >= '2022-07-01'::date
+   and o.creation_date < current_date 
+   and o.status=101
+   and o.main_card_type not in(16,17,18,28,29,20)
+   and(o.orderid = su.first_orderid)
+   and (case when (cast(su.first_order_date as date) - cast(u.reg_date as date))<=31 then (u.kid) 
+                  when (cast(su.first_order_date as date) - cast(u.reg_date as date))>31  then (o.kid) 
+                 end )like any (array[
+'%googleadwords%',
+'%youtube_ads%',
+'%youtube_landing%',
+'106X%',
+'111X%',
+'125X%',
+'142X%',
+'76X%',        
+'2X%',                         
+'0x%'])
+ 
+Group by 1,2,3,4,5,6,7,8,9,10,11,12,13

@@ -1,0 +1,43 @@
+select distinct
+ CAST(d.redemption_date as date) as data,
+ d.redemption_date,
+ su.first_order_date,
+ d.name,
+ d.code,
+ d.merchant,
+ d.merchant_offerid,
+ d.userid,
+ d.orderid,
+ sum(case when uc.status=1  then 1 else 0 end )as CC_cadast, 
+ --round(d.paid_amount,2),
+ --count(distinct d.merchant) as merchant ,
+ --count(distinct d.code) as gifts,
+ CASE WHEN d.Status =1 and d.orderid <>0 AND d.orderid = su.first_orderid then 1 else 0 END as flg_new,
+ CASE WHEN d.Status =1 and d.orderid <>0 AND d.orderid <> su.first_orderid then 1 else 0 END as flg_repeat,
+ CASE WHEN d.Status =1 and d.orderid = 0 then 1 else 0 end as flg_Wallet
+from discount_coupons d
+inner join stat_users su on d.userid=su.userid
+left join user_creditcards uc on (d.userid = uc.userid)
+left join bin t on (uc.bcc_firstdigit=t.bin_number)
+where redemption_date>= '2021-01-01' and redemption_date < '2021-02-01'   --current_date
+and d.status=1
+--and upper (d.merchant) like  ('%AKTUELLMIX%') 
+and ( upper (d.merchant) like ('%KWAI%') 
+	   or upper (d.merchant) like ('%ARCAMAIS%') 
+       or upper (d.merchant) like ('%DOTZ%') 
+	   or upper (d.merchant) like ('%WE%') 
+	   or upper (d.merchant) like ('%DUASRODAS%') 
+	   or upper (d.merchant) like ('%ECGLOBAL%') 
+	   or upper (d.merchant) like ('%PROMOBRAZIL%') 
+	   or upper (d.merchant) like ('%QUALIBEST%') 
+	   or upper (d.merchant) like ('%NETQUEST%') 
+	   or upper (d.merchant) like ('%AKTUELLMIX%') 
+	   or upper (d.merchant) like ('%PEPSICO%') 
+	   or upper (d.merchant) like ('%NETZA%') 
+	   or upper (d.merchant) like ('%FLASH%')
+	   or upper (d.merchant) like ('%BRIDA%')
+		 )
+----('%QUALIBEST%') 
+--and d.userid in ( 2766860,22410050)
+group by 1,2,3,4,5,6,7,8,9,11,12,13
+order by 1
