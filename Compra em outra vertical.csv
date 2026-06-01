@@ -1,0 +1,39 @@
+----- user de bills que fez pix nos ooutros meses
+
+
+Select distinct
+date_trunc('month',su.first_order_date)::date as Month_first_order,
+date_trunc('month',o.creation_date)::date as Month_creation,
+o.userid,
+count (distinct case when o.orderid = su.first_orderid  then o.userid end )as new,
+count (distinct case when o.orderid > su.first_orderid or o.orderid= su.first_utility_orderid then o.userid end )as new_cross_bils, --- outra vertical só alterar aqui
+--count (distinct case when o.orderid > su.first_orderid or o.orderidr =  su.first_utility_orderid then o.userid end )as new_cross_bills
+round(sum( o.discount_amount),2) as Discount_USD,
+round(Sum (o.gtv),2)as BRL_USD,
+count(distinct case when o.creditcard_amount>0  then o.userid end )as Pgto_CC,
+round(sum(case when o.main_card_type in(7) then (o.creditcard_amount)
+                else((o.extra_charge_summa)+
+                     (o.financing_summa)+
+                     (o.profit_margin)) end),2) 
+as revenue_USD
+
+from orders o
+inner join stat_users su on su.userid=o.userid
+
+where o.status in (101)
+and o.creation_date >='2022-08-01'
+and o.creation_date <'2022-09-01'
+and (o.orderid = su.first_orderid or o.orderid = su.first_pix_out_orderid) ---pix payment
+--and (o.orderid > su.first_orderid or o.orderidr =  su.first_utility_orderid) ----bills
+and o.userid in 
+(Select distinct
+o.userid
+from orders o
+inner join stat_users su on o.orderid = su.first_orderid
+where o.status in(101)
+and o.creation_date >='2022-01-01'
+and o.creation_date <'2022-09-01'
+and o.main_card_type in (44))
+group by 1,2,3
+order by 1,2
+
